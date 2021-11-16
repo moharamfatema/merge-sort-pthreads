@@ -10,6 +10,9 @@ struct arr{
     int * elements;
 };
 
+/*global vars*/
+arr * original_array;
+
 /*read array from file*/
 arr* read_array(const char * file_name){
     std::ifstream fin;
@@ -48,40 +51,108 @@ void print_array (const arr * array){
     std::cout << "\n";
 }
 
-void merge(const arr * array, const int left, const int mid, const int right){
+void merge(const int begin, const int end){
 
-    const int sub_array_1 = mid - left + 1;
-    const int sub_array_2 = right - mid;
+    int mid = ( begin + end ) / 2;
+    int left = begin;
+    int right = mid + 1;
 
-    /*create auxilary arrays*/
-    arr * left_array = new arr,
-        * right_array = new arr;
-
-    left_array->size = sub_array_1;
-    right_array->size = sub_array_2;
-
-    /*copy data to new arrays*/
-    for(int i = 0; i < sub_array_1; i++)
-        left_array->elements[i] = array->elements[left + i];
+    int new_size = end - begin + 1;
+    int * new_elements = new int[new_size];
+    int new_index = 0;
     
-    for(int i = 0; i < sub_array_2; i++)
-        right_array->elements[i] = array->elements[mid + 1 + i];
-    
-    int index_subarr_1 = 0,
-        index_subarr_2 = 0,
-        index_merged_arr = left;
+    /*merging*/
+    while(left <= mid && right <= end){
+        if(original_array->elements[left] > original_array->elements[right])
+            new_elements[new_index++] = original_array->elements[right++];
+        else
+            new_elements[new_index++] = original_array->elements[left++];
+    }
+
+    /*merge the remaiining of either array*/
+    while(left <= mid)
+        new_elements[new_index++] = original_array->elements[left++];
+
+    while(right <= end)
+        new_elements[new_index++] = original_array->elements[right++];
+
+    /*copy back to original array*/
+    for(int i = 0; i < new_size; i++)
+        original_array->elements[i + begin] = new_elements[i];
+
+    /*cleanup*/
+    delete[] new_elements;
 
     
 }
 
+/*define merge sort parameters*/
+struct Range{
+    int begin, end;
+};
+
+/*merge-sort as threads*/
+void * merge_sort(void * rangeptr){
+    Range * range = (Range *) rangeptr;
+    
+    if( range->begin >= range->end) pthread_exit(0);
+
+    Range left_range, right_range;
+
+    int mid = ( range->begin + range->end ) / 2;
+    
+    left_range.begin = range->begin;
+    left_range.end = mid;
+
+    right_range.begin = mid + 1;
+    right_range.end = range->end;
+
+    pthread_t tid1, tid2;
+
+    if( pthread_create(&tid1, nullptr, merge_sort, &left_range)){
+        std::cout << "Unable to create thread. Exiting...\n";
+        exit(-1);
+    }
+
+    if( pthread_create(&tid2, nullptr, merge_sort, &right_range)){
+        std::cout << "Unable to create thread. Exiting...\n";
+        exit(-1);
+    }
+
+    pthread_join(tid1,nullptr);
+    pthread_join(tid2,nullptr);
+
+    merge(range->begin, range->end);
+    pthread_exit(0);
+}
+
+
 int main(){
 
-    ///*get file name*/
-    //char * fileName =(char *) malloc(FILENAME_MAX*sizeof(char));
+    /*get file name*/
+    char * fileName =(char *) malloc(FILENAME_MAX*sizeof(char));
 
-    //std::cout << "Enter the name of the input file: \n";
-    //std::cin >> fileName;
-    arr * original_array = read_array("input.txt");
+    std::cout << "Enter the name of the input file: \n";
+    std::cin >> fileName;
+    
+    original_array = read_array("input.txt");
+
+    /*creating the first thread of merge sort*/
+    Range range;
+    range.begin = 0;
+    range.end = original_array->size - 1;
+
+    pthread_t tid;
+
+
+    if( pthread_create(&tid, nullptr, merge_sort, &range))
+    {
+        std::cout << "Unable to create thread, Exiting...\n";
+        return -1;
+    }
+    pthread_join(tid, nullptr);
+
+    print_array(original_array);
 
     /*cleanup*/
     delete [] original_array->elements;
