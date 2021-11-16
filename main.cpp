@@ -57,6 +57,20 @@ void merge(const arr * array, const int left, const int mid, const int right){
     arr * left_array = new arr,
         * right_array = new arr;
 
+    left_array->size = sub_array_1;
+    right_array->size = sub_array_2;
+
+    /*copy data to new arrays*/
+    for(int i = 0; i < sub_array_1; i++)
+        left_array->elements[i] = array->elements[left + i];
+    
+    for(int i = 0; i < sub_array_2; i++)
+        right_array->elements[i] = array->elements[mid + 1 + i];
+    
+    int index_subarr_1 = 0,
+        index_subarr_2 = 0,
+        index_merged_arr = left;
+
     
 }
 
