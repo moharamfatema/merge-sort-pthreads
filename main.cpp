@@ -3,6 +3,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <stdlib.h>
+#define FILENAME_MAX 4096
 
 /*defining an array*/
 struct arr{
@@ -135,7 +136,7 @@ int main(){
     std::cout << "Enter the name of the input file: \n";
     std::cin >> fileName;
     
-    original_array = read_array("input.txt");
+    original_array = read_array(fileName);
 
     /*creating the first thread of merge sort*/
     Range range;
